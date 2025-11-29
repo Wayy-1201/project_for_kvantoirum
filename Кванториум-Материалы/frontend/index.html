@@ -1,0 +1,3409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система управления материалами для 3D-принтеров</title>
+    <link rel="icon" href="sas.png">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        ::selection {
+            background-color: #6366f1;
+            color: white;
+        }
+        *::-webkit-scrollbar{
+            width: 8px;
+        }
+        *::-webkit-scrollbar-thumb{
+            background-color: rgb(255, 255, 255);
+        }
+        *::-webkit-scrollbar-track{
+            background: radial-gradient(ellipse at bottom, #163049 0%, #000000 150%);
+        }
+
+        body {
+            background: radial-gradient(ellipse at bottom, #163049 0%, #000000 150%);
+            min-height: 100vh;
+            background-size: 100% 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 0 20px;
+            flex: 1;
+            width: 100%;
+        }
+
+        header {
+            background: rgba(23, 37, 51, 0.9);
+            backdrop-filter: blur(10px);
+            color: rgb(255, 255, 255);
+            padding: 1rem 0;
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        nav {
+            width: 100%;
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+            padding: 0 20px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            position: relative;
+            isolation: isolate;
+        }
+        .nav-links a.active::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(to right, #6111cb 0%, #2575fc 100%);
+            z-index: -1;
+            border-radius: 0.75rem;
+        }
+        
+        .auth-section {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            padding: 10px 23px;
+            border: none;
+            background-color: rgb(255, 255, 255);
+            color: rgb(0, 0, 0);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 650;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #ffffff;
+            color: rgb(0, 0, 0);
+            margin-left: 7px;
+            transition: 0.3s ease;
+            margin-right: 7px;
+        }
+
+        .btn-primary2{
+            background: linear-gradient(45deg , #fff 0% , #002999 80%);
+            transition: 0.3s ease-in;
+            color: white;
+        }
+        .btn-primary2:hover{
+            transform: scale(1.01);
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
+        .form-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 90%;
+        }
+        
+        .form-container h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #2c3e50;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .form-footer {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .form-footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+
+        #guest-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 65vh;
+            text-align: center;
+            transition: 0.3s ease;
+        }
+
+        .user-info {
+            width: 100%;
+            max-width: 850px;
+            text-align: center;
+            padding: 40px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            display: block;
+            transition: 0.2s ease;
+            justify-content: center;
+        }
+        .user-info2{
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            height: auto;
+            min-height: 200px;
+            margin-top:  60px;
+            padding: 40px;
+            border-left: 5px solid blue;
+            text-align: center;
+
+        }
+        
+        b {
+            background: linear-gradient(135deg, #999999 0%, #0051ff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+            padding: 0.2em 0.5em;
+        }
+
+        .for_guests {
+            font-weight: 700;
+            color: #5c5c5c;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+        .Info_for_plusik{
+            width: 100%;
+            display: flex;
+            margin-top: 50px;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .primer1 , .primer2 , .primer3{
+            color: white;
+            font-weight: bold;
+            letter-spacing: 1px;
+            font-size: 22px;
+            display: flex;
+            align-items: end;
+            padding: 30px;
+            justify-content: center;
+            backdrop-filter: blur(200px);
+            border-radius: 10px;
+            border: 1px solid white;
+            width: 250px;
+            height: 250px;
+            transition: 0.3s ease-in-out;
+            cursor: pointer;
+        }
+        .primer1::before{
+            content: "⚡";
+            position: absolute;
+            top: 30px;
+            left: 50%; 
+            transform: translateX(-50%);
+            font-size: 30px;
+        }
+        .primer2::before{
+            content: "🥇";
+            position: absolute;
+            top: 30px;
+            left: 50%; 
+            transform: translateX(-50%);
+            font-size: 30px;
+        }
+        .primer3::before{
+            content: "🔐";
+            position: absolute;
+            top: 30px;
+            left: 50%; 
+            transform: translateX(-50%);
+            font-size: 30px;
+        }
+        .primer1:hover , .primer2:hover , .primer3:hover{
+            transform: scale(1.05);
+            box-shadow: 0 0 10px 10px rgba(255, 255, 255, 0.1);
+            border-radius: 0px;
+        }
+
+        .admin-panel {
+            margin: 30px 0;
+            padding: 10px;
+            width: 100%;
+            background-color: white;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-top: 5px solid #002999;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Декоративные элементы для админ-панели */
+        .admin-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            background-color: white;
+            height: 200%;
+            transform: rotate(45deg);
+            z-index: 0;
+        }
+
+
+        .admin-panel h2 {
+            color: #002999;
+            font-size: 27px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .admin-panel h2::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #002999, transparent);
+            border-radius: 2px;
+        }
+        
+        .admin-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: space-evenly;
+            flex-wrap: wrap;
+            margin-top: 35px;
+            position: relative;
+        }
+        .btn-admin{
+            background: linear-gradient(225deg , #005bd3 0% , #002999 30%);
+            color: white;
+            transition: 0.3s ease-in-out;
+            position: relative;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 41, 153, 0.3);
+        }
+        .btn-admin:hover{
+            transform: scale(1.01);
+            box-shadow: 0 6px 20px rgba(0, 41, 153, 0.4);
+        }
+
+        .btn-admin::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-admin:hover::before {
+            left: 100%;
+        }
+
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        /* Стили для товаров */
+        .products-section {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: rgb(248, 248, 248);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+
+        
+        .section-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 50px 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            background: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+        }
+
+        .search-icon {
+            margin-left: -40px;
+            color: #666;
+            font-size: 18px;
+            z-index: 2;
+        }
+
+        .add-product-btn {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(46, 204, 113, 0.3);
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .add-product-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+        }
+
+        .add-product-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+
+        .add-product-btn:hover::before {
+            left: 100%;
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .product-card {
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #3498db;
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #002999, #005bd3, #002999);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .product-image-container {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .product-image-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .product-name {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .product-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .product-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .detail-value {
+            color: #6c757d;
+            text-align: right;
+        }
+        
+        .product-status {
+            margin: 10px 0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .available-status {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .rented-status {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .product-actions {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        
+        .image-upload {
+            margin-bottom: 15px;
+        }
+        
+        .image-preview-container {
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .no-products {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+            font-size: 18px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px dashed #ddd;
+            grid-column: 1 / -1;
+        }
+        
+        /* Стили для статистики */
+        .stats-section {
+            width: 100%;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: rgb(250, 250, 250);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    
+        .stats-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .stat-card {
+            border: 1.5px solid #0035e4;
+            border-radius: 8px;
+            padding: 15px;
+            height: 120px;
+            text-align: left;
+            transition: 0.2s ease-in-out;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover{
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 53, 228, 0.15);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 53, 228, 0.05) 0%, transparent 50%);
+            z-index: 0;
+        }
+        .stat-card h3{
+            text-align: center;
+        }
+        .stat-card > * {
+            position: relative;
+            z-index: 1;
+        }
+        .stat-value {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #1f5e88;
+            text-align: center;
+
+        }
+        
+        .purchase-history {
+            background-color: white;
+            border-radius: 14px;
+        }
+        .ttt2{
+            margin-top: 20px;
+            color: #c9c9c9;
+            display: flex;
+            justify-content: end;
+            text-align: end;
+        }
+        
+        .purchase-item {
+            border-radius: 8px;
+            background-color: #f3f3f3;
+            padding: 10px 18px;
+            margin-bottom: 15px;
+            position: relative;
+            opacity: 0;
+            transform: scale(0.6);
+            animation: ScaleIn linear both;
+            animation-timeline: view();
+            animation-range: entry 0% cover 40%;
+        }
+        @keyframes ScaleIn{
+            from{
+            opacity: 0.9;
+            transform: scale(0.9);
+            }
+            to{
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .purchase-item::before {
+            content: '📌';
+            position: absolute;
+            top: 0;
+            right: 0;
+            margin-top: 5px;
+            margin-right: 5px;
+        }
+        .purchase-item::after{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 53, 228, 0.05) 0%, transparent 100%);
+            z-index: 0;
+        }
+        .ttt{
+            text-align: center;
+            margin-top: 25px;
+            color: #000000;
+        }
+        
+
+
+        /* Стили для таблиц */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+            display: block;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+            transition: 0.15s ease-in-out;
+            min-width: 120px; 
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        th:first-child,
+        td:first-child {
+            min-width: 80px;
+            width: 10%;
+        }
+
+        th:last-child,
+        td:last-child {
+            min-width: 350px;
+            width: 20%;
+        }
+
+        
+        .sisistik{
+            font-size: 26px;
+            padding: 0 0 0 0;
+        }
+        
+        
+        textarea{
+            resize: none;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .rent-button {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .return-button {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .close-modal {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .close-modal:hover {
+            color: #333;
+        }
+
+        .logo_link{
+            text-decoration: none;
+            color: white;
+            font-size: 1.4em;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .text-part{
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .text-part.visible {
+            opacity: 1;
+            transform: translateY(0);
+            transition: 0.5s ease;
+        }
+
+        #to-register{
+            color: rgb(0, 60, 255);
+            font-weight: bold;
+            text-decoration: none;
+            transition: 0.3s ease;
+        }
+        #to-login{
+            color: rgb(0, 60, 255);
+            font-weight: bold;
+            text-decoration: none;
+            transition: 0.3s ease;
+        }
+        #to-register:hover{
+            text-decoration: none;
+            color: #163049;
+        }
+        #to-login:hover{
+            text-decoration: none;
+            color: #163049;
+        }
+
+        input::placeholder{
+            color: black;
+            font-weight: bold;
+        }
+        
+        #user-content{
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+            min-height: 30vh;
+            margin-top: 50px;
+        }
+        #user-role-message{
+            color: #929292;
+            letter-spacing: 1px;
+            font-weight: 650;
+        }
+
+        .admin-nav-label {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 10px rgba(238, 90, 36, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .admin-controls2{
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            height: auto;
+            min-height: 100px;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+            margin-top: 30px;
+            margin-bottom: 30px;
+            border: 2.5px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            padding: 15px;
+            position: relative;
+            gap: 15px;
+        }
+
+        .admin-controls2::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 41, 153, 0.05) 0%, transparent 50%);
+            border-radius: 6px;
+            pointer-events: none;
+        }
+        .btn-primary3{
+            background-color: rgb(0, 168, 0);
+            color: white;
+            text-align: center;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary3:hover{
+            transform: translateY(-2px);
+            background-color: #00b61e;
+        }
+
+        .btn-primary3::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-primary3:hover::before {
+            left: 100%;
+        }
+
+
+        .df{
+            margin-top: 30px;
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 350px;
+            padding: 12px 50px 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            background: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .df:focus{
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+        }
+        .stats-search{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+        }
+        .stats-search::before{
+            content: '🔍';
+            font-size: 16px;
+            position: absolute;
+            right: 0px;
+            margin-right: 15px;
+            z-index: 2;
+        }
+
+        /* Новые стили для формы добавления товара внутри админ-панели */
+        .add-product-section {
+            margin: 40px 0;
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            background-color: rgb(248, 248, 248);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .add-product-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #002999, #005bd3, #002999);
+        }
+
+        .add-product-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 19px;
+        }
+
+        .admin-welcome {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            border-left: 4px solid #002999;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .admin-welcome::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(0, 41, 153, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(0, 41, 153, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .admin-welcome h3 {
+            color: #002999;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .admin-welcome p {
+            color: #6c757d;
+            font-size: 16px;
+            position: relative;
+        }
+        .for_add-product-section{
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+
+        #users-management,
+        #admin-products,
+        #admin-stats {
+            position: relative;
+            overflow-x: auto;
+        }
+
+        #users-management::before,
+        #admin-products::before,
+        #admin-stats::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #002999, #005bd3, #002999);
+            border-radius: 2px 2px 0 0;
+        }
+
+        /* Анимация появления для админских секций */
+        .admin-section-appear {
+            animation: adminSectionAppear 0.5s ease-out;
+        }
+        .btn-excel {
+            background: linear-gradient(135deg, #217346 0%, #1e7e34 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(33, 115, 70, 0.3);
+            white-space: nowrap;
+        }
+
+        .btn-excel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(33, 115, 70, 0.4);
+        }
+
+        @keyframes adminSectionAppear {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .accordion{
+            width: 100%;
+            max-width: 500px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-top: 45px;
+        }
+        .accordionItem{
+            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+        }
+        .accordionHeader{
+            padding: 20px;
+            cursor: pointer;
+            background-color: #fafafa;
+            position: relative;
+            font-weight: bold;
+        }
+        .accordionHeader::after{
+            content: "+";
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 20px;
+            transition: transform 0.4s ease-in-out;
+        }
+        .accordionHeader.active::after{
+            content: "+";
+            transform: rotate(45deg);
+        }
+        .accrordionBody{
+            max-height: 0;
+            overflow: hidden;
+            padding: 0 20px;
+            transition: all 0.4s;
+            background-color: #fafafa;
+        }
+        .accrordionBody.open{
+            padding: 15px 20px;
+            max-height: 300px;
+        }
+        
+        /* Стили для главной страницы пользователя */
+        #user-home {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .dd_h2{
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .search-container{
+            display: flex;
+            justify-content: center;
+        }
+        .section-header2{
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 10px 5px;
+        }
+        .products-section2{
+            width: 100%;
+            max-width: 1200px;
+            background-color: rgb(238, 238, 238);
+            padding: 30px;
+        }
+        .search-icon3{
+            position: relative;
+            left: -40px;
+        }
+        .user-info2{
+            height: auto;
+            min-height: 150px;
+            position: relative;
+            top: -50px;
+        }
+        .stats-section2{
+            width: 100%;
+            max-width: 1200px;
+            background-color: rgb(250, 250, 250);
+            padding: 20px;
+        }
+        .stats-grid2{
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        }
+        .stats-section2 h2{
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .stats-section2 .f{
+            margin-top: 10px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .rental-status{
+            width: 100%;
+            display: flex;
+            text-align: center;
+            justify-content: center;
+            color: rgb(255, 255, 255);
+            font-weight: bold;
+            font-size: 15px;
+            background-color: rgb(219, 204, 116);
+            border-radius: 10px;
+            padding: 5px 5px;
+        }
+        .rental-status_true{
+            width: 100%;
+            display: flex;
+            text-align: center;
+            justify-content: center;
+            color: rgb(255, 255, 255);
+            font-weight: bold;
+            font-size: 15px;
+            background-color: rgb(30, 150, 0);
+            border-radius: 10px;
+            padding: 5px 5px;
+        }
+        .profle_user{
+            width: 100%;
+            max-width: 650px;
+            height: auto;
+            min-height: 235px;
+            background-color: white;
+            border-radius: 14px;
+            border-left: 4px solid green;
+            padding: 10px;
+            transition: 0.3s ease-out;
+            position: relative;
+        }
+        .profle_user:hover{
+            border-left: 4px solid rgb(255, 208, 0);
+        }
+        .information_div{
+            width: 100%;
+        }
+        .information_div h3{
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 24px;
+        }
+        .info{
+            width: 100%;
+            display: flex;
+            justify-content:space-between;
+            padding: 5px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            transition: 0.3s ease-in-out;
+            flex-wrap: wrap;
+        }
+        .password{
+            margin-bottom: 0px;
+        }
+        .info .span_name , .span-email , .span-password{
+            font-weight: bold;
+            color: black;
+            font-weight: 14px;
+        }
+        .info_span_name , .info_span_email , .info_span_password{
+            font-size: 14px;
+            font-weight: 450;
+            color: rgb(92, 92, 92);
+        }
+        .info:hover{
+            transform: translateY(-2px);
+            border: 2px solid rgba(0, 117, 252, 1);
+        }
+        .profle_user::before{
+            content: '🔐';
+            position: absolute;
+            top: 0;
+            right: 0;
+            font-size: 19px;
+            margin-top: 5px;
+            margin-right: 5px;
+        }
+        .information_div h5{
+            text-align: end;
+            color: rgb(180, 180, 180);
+            
+        }
+        .olso{
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            height: auto;
+            min-height: 45px;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .button_glaz{
+            border: none;
+            outline: none;
+            background-color: #12a033;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.3s ease-in-out;
+            font-weight: bold
+        }
+        .button_glaz:hover{
+            background-color: #00b61e;
+        }
+        .admin-section-appear{
+            margin-top: 20px;
+        }
+        .excel_info{
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            height: 100px;
+            align-items: center;
+            background-color: #eeeeee;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            padding: 10px 10px;
+            border-radius: 14px;
+        }
+
+
+        footer {
+            width: 100%;
+            background: rgba(23, 37, 51, 0.9);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 50px;
+        }
+
+        .footer-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-links {
+            display: flex;
+            margin-left: 20px;
+            gap: 30px;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.3s ease-in-out;
+        }
+
+        .footer-links a:hover {
+            color: #3498db;
+        }
+
+        .footer-copyright p {
+            position: relative;
+            top: 12px;
+            left: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            margin-right: 20px;
+        }
+
+
+
+        /* Медиа-запросы для адаптивности */
+        @media (max-width: 1200px) {
+            .container {
+                padding: 0 15px;
+            }
+            
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .stats-grid, .stats-grid2 {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+        }
+
+        @media (max-width: 992px) {
+            nav {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .auth-section {
+                margin-top: 15px;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .search-container {
+                width: 100%;
+                max-width: 400px;
+            }
+            
+            .admin-controls2 {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .stats-search {
+                width: 100%;
+            }
+            
+            .df {
+                width: 100%;
+            }
+
+        .footer-links {
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            justify-content: center;
+        }
+        .footer-content p{
+            font-size: 12px;
+        }
+        }
+
+        @media (max-width: 768px) {
+            .primer1, .primer2, .primer3 {
+                width: 100%;
+                max-width: 300px;
+            }
+            .excel_info{
+                display: flex;
+                flex-direction: column;
+            }
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            }
+            
+            .stats-grid, .stats-grid2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .admin-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn-admin {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+            }
+            
+            .modal-content {
+                padding: 15px;
+            }
+            
+            .user-info, .user-info2 {
+                padding: 20px;
+            }
+            
+            .profle_user {
+                padding: 15px;
+            }
+            
+            .accordion {
+                margin-top: 25px;
+            }
+    }
+        @media (max-width: 576px) {
+            .nav-links {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .nav-links a {
+                text-align: center;
+                width: 100%;
+            }
+            .sisistik{
+                font-size: 20px;
+            }
+            .auth-section {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .product-card {
+                padding: 15px;
+            }
+            
+            .product-image-container {
+                height: 150px;
+            }
+            
+            .admin-panel {
+                padding: 5px;
+            }
+            
+            .admin-controls {
+                gap: 5px;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn-group .btn {
+                width: 100%;
+            }
+            
+            .section-header, .section-header2 {
+                padding: 10px;
+            }
+            
+            .search-input {
+                padding: 10px 40px 10px 15px;
+            }
+            
+            .Info_for_plusik {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .primer1, .primer2, .primer3 {
+                width: 100%;
+                max-width: 280px;
+            }
+            
+            .stat-card {
+                height: auto;
+                min-height: 120px;
+            }
+            
+            .stat-value {
+                font-size: 2.5rem;
+            }
+            
+            .accordionHeader {
+                padding: 15px;
+            }
+            
+            .accrordionBody {
+                padding: 0 15px;
+            }
+            
+            .accrordionBody.open {
+                padding: 10px 15px;
+            }
+            
+            .info {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .olso {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .button_glaz {
+                width: 100%;
+            }
+            
+            .information_div h5 {
+                text-align: center;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+            }
+            
+            .footer-link {
+                text-align: center;
+                width: 200px;
+            }
+            
+            .footer-copyright p {
+                font-size: 13px;
+                top: 0px;
+                left: 0px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .container {
+                padding: 0 10px;
+            }
+            
+            .form-container {
+                padding: 15px;
+            }
+            
+            .user-info, .user-info2 {
+                padding: 15px;
+            }
+            
+            .product-card {
+                padding: 10px;
+            }
+            
+            .admin-panel h2 {
+                font-size: 22px;
+            }
+            .sisistik{
+                font-size: 20px;
+            }
+            .btn-excel{
+                font-size: 24px;
+            }
+            .btn {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+            
+            .add-product-btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+
+</style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    
+    <header>
+        <div class="container text-part">
+            <nav>
+                <a class="logo_link" href="#"><div class="logo">Кванториум 3D-Склад</div></a>
+                <div id="nav" class="nav-links">
+                    <a href="#" class="active" id="home-link">Главная</a>
+                    <a href="#" id="profile-link" class="hidden">Профиль</a>
+                    <a href="#" id="products-link" class="hidden">Материалы</a>
+                    <a href="#" id="stats-link" class="hidden">Статистика</a>
+                </div>
+                <div id="admin-nav-label" class="admin-nav-label hidden">
+                    <span>АДМИНИСТРАТОР</span>
+                </div>
+                <div class="auth-section">
+                    <button id="login-btn" class="btn btn-primary">Вход</button>
+                    <button id="register-btn" class="btn btn-primary">Регистрация</button>
+                    <button id="logout-btn" class="btn btn-secondary hidden">Выйти из Аккаунта ( - )</button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Форма регистрации -->
+        <div id="register-form" class="form-container hidden">
+            <h2>Регистрация</h2>
+            <div id="register-message" class="message hidden"></div>
+            <form id="registerForm">
+                <div class="form-group">
+                    <input placeholder="ФИО" type="text" id="reg-username" required>
+                </div>
+                <div class="form-group">
+                    <input placeholder="Email" type="email" id="reg-email" required>
+                </div>
+                <div class="form-group">
+                    <input placeholder="Password" type="password" id="reg-password" required>
+                </div>
+                <div class="form-group">
+                    <input placeholder="Confirm password" type="password" id="reg-confirm-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary2" style="width: 100%;">Зарегистрироваться</button>
+            </form>
+            <div class="form-footer">
+                Уже есть аккаунт? <a href="#" id="to-login">Войти</a>
+            </div>
+        </div>
+
+        <!-- Форма входа -->
+        <div id="login-form" class="form-container hidden">
+            <h2>Вход</h2>
+            <div id="login-message" class="message hidden"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <input placeholder="Email" type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <input placeholder="Password" type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary2" style="width: 100%;">Войти</button>
+            </form>
+            <div class="form-footer">
+                Нет аккаунта? <a href="#" id="to-register">Зарегистрироваться</a>
+            </div>
+        </div>
+
+        <!-- Модальное окно для заказа -->
+        <div id="order-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Заказ материала</h3>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div id="order-message" class="message hidden"></div>
+                <form id="orderForm">
+                    <div class="form-group">
+                        <label for="order-quantity">Количество материала (кг)</label>
+                        <input type="number" id="order-quantity" step="0.1" required min="0.1">
+                    </div>
+                    <button type="submit" class="btn btn-success" style="width: 100%;">Подтвердить заказ</button>
+                </form>
+            </div>
+        </div>
+        <!-- Контент для авторизованных пользователей -->
+        <div id="user-content" class="hidden text-part">
+            <!-- Главная страница пользователя -->
+
+            <div id="user-home" class="text-part">
+                <div id="for_admin" class="user-info2 text-part">
+                    <h2>Добро пожаловать, <span id="username-display"></span>!</h2>
+                    <p style="margin-top: 25px;" id="user-role-message"></p>
+                </div>
+                <div id="accordion" class="accordion text-part">
+                    <div class="accordionItem">
+                        <div class="accordionHeader">Как <b>Получить</b> Материалы: </div>
+                        <div class="accrordionBody">
+                            <p>1. Перейдите в раздел "Материалы" в верхнем меню</p>
+                            <p>2. Найдите нужный материал с помощью поиска или просмотрев весь список</p>
+                            <p>3. Нажмите кнопку "Заказать" на карточке материала</p>
+                            <p>4. Укажите необходимое количество в килограммах</p>
+                            <p>5. Подтвердите заказ</p>
+                            <p>6. Дождитесь подтверждения от администратора</p>
+                        </div>
+                    </div>
+                    <div class="accordionItem">
+                        <div class="accordionHeader">Общая Справка:</div>
+                        <div class="accrordionBody">
+                            <p>Система управления материалами для 3D-печати позволяет:</p>
+                            <p>• Просматривать доступные материалы (PLA, ABS, PETG и другие)</p>
+                            <p>• Заказывать необходимое количество материала</p>
+                            <p>• Отслеживать статус ваших заказов</p>
+                            <p>• Просматривать историю заказов</p>
+                            <p>Все материалы хранятся в специальных условиях для сохранения качества.</p>
+                        </div>
+                    </div>
+                    <div class="accordionItem">
+                        <div class="accordionHeader">Как <b>Подтвердить</b> Мой заказ ?</div>
+                        <div class="accrordionBody">
+                            <p>После оформления заказа:</p>
+                            <p>1. Ваш заказ поступает в систему и ожидает подтверждения администратором</p>
+                            <p>2. Администратор проверяет наличие материала и подтверждает заказ</p>
+                            <p>3. Вы получите уведомление о подтверждении заказа</p>
+                            <p>4. После подтверждения вы можете забрать материал в указанном месте</p>
+                            <p>5. Статус заказа можно отслеживать в разделе "Статистика"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Панель администратора -->
+            <div id="admin-panel" class="admin-panel hidden text-part">
+                <!-- Приветствие администратора -->
+                <div class="admin-welcome">
+                    <h3>Добро пожаловать в панель администратора!</h3>
+                    <p>Здесь вы можете управлять пользователями, материалами и просматривать статистику</p>
+                </div>
+                
+                <h2>Панель администратора</h2>
+                <div class="admin-controls">
+                    <button id="manage-users-btn" class="btn btn-admin">Управление пользователями</button>
+                    <button id="add-product-btn" class="btn btn-admin">Добавить материал</button>
+                    <button id="view-products-btn" class="btn btn-admin">Просмотр материалов</button>
+                    <button id="view-stats-btn" class="btn btn-admin">Статистика</button>
+                </div>
+                
+                <!-- Форма добавления материала внутри админ-панели -->
+                <div class="for_add-product-section">
+                    <div id="add-product-section" class="add-product-section hidden">
+                    <h2>Добавить Материал для 3D-Принтера</h2>
+                    <div id="product-message" class="message hidden"></div>
+                    <form id="productForm">
+                        <div class="form-group">
+                            <label for="product-name">Вид материала</label>
+                            <input type="text" id="product-name" required maxlength="20" placeholder="Например: PLA">
+                        </div>
+                        <div class="form-group">
+                            <label for="product-weight">Вес катушки (кг)</label>
+                            <input type="number" id="product-weight" step="0.01" required placeholder="Например: 0.75">
+                        </div>
+                        <div class="form-group">
+                            <label for="product-diameter">Диаметр нити (мм)</label>
+                            <input type="text" id="product-diameter" required maxlength="15" placeholder="Например: 1.75">
+                        </div>
+                        <div class="form-group">
+                            <label for="product-color">Цвет</label>
+                            <input type="text" id="product-color" required maxlength="15" placeholder="Например: черный">
+                        </div>
+                        <div class="form-group">
+                            <label for="product-category">Условия хранения</label>
+                            <select id="product-category">
+                                <option value="electronics">В герметичном контейнере, с силикагелем, при t15–25°C, влажность ≤ 40%</option>
+                                <option value="clothing">В сухом, прохладном месте, избегать прямого света, t 15–25°C, влажность ≤ 50%</option>
+                                <option value="tools">В герметичной упаковке, с влагопоглотителем, t 15–25°C, влажность ≤ 45%</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-stock">Количество в наличии (кг)</label>
+                            <input type="number" id="product-stock" step="0.01" required>
+                        </div>
+                        <!-- Новое поле для загрузки изображения -->
+                        <div class="form-group image-upload">
+                            <label for="product-image">Изображение материала (если есть)</label>
+                            <input type="file" id="product-image" accept="image/*">
+                            <div class="image-preview-container">
+                                <img id="image-preview" class="hidden product-image-preview">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success" style="width: 100%;">Добавить материал</button>
+                    </form>
+                </div>
+                </div>
+                
+                <!-- Управление пользователями -->
+                <div id="users-management" class="hidden admin-section-appear">
+                    <div class="excel_info">
+                        <h3 class="sisistik">Управление пользователями</h3>
+                        <button id="excel_people" class="btn-excel btn">📊 Excel (пользователи) </button>
+                    </div>
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Имя</th>
+                                <th>Email</th>
+                                <th>Роль</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Данные будут заполнены через JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Просмотр материалов для админа -->
+                <div id="admin-products" class="products-section hidden admin-section-appear">
+                    <div class="section-header">
+                        <div class="search-container">
+                            <input type="text" id="admin-search" placeholder="Поиск по названию материала..."value="" oninput="searchAdminProducts(this.value)"class="search-input">
+                            <div class="search-icon">🔍</div>
+                        </div>
+                        <button id="add-new-product-btn" class="btn btn-success add-product-btn">+ Добавить материал</button>
+                    </div>
+                    
+                    <div id="admin-products-grid" class="products-grid">
+                        <!-- Материалы будут добавлены через JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Статистика для админа -->
+                <div id="admin-stats" class="stats-section hidden admin-section-appear">
+                    <h2>Статистика материалов</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Общее кол-во пользователей:</h3>
+                            <div class="stat-value" id="total-users">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Общее кол-во материалов:</h3>
+                            <div class="stat-value" id="total-products">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Общее кол-во заказов:</h3>
+                            <div class="stat-value" id="total-sales">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Активные заказы:</h3>
+                            <div class="stat-value" id="active-rentals">0</div>
+                        </div>
+                    </div>
+                
+                    <div class="admin-controls2">
+                        <div class="stats-search">
+                            <input class="df" type="text" id="stats-search" placeholder="Поиск по материалу, людям и... "oninput="filterRentalsTable(this.value)">
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button id="refresh-stats-btn" class="btn btn-primary3">Обновить статистику</button>
+                            <button id="export-excel-btn" class="btn btn-excel">📊 Excel</button>
+                        </div>
+                    </div>
+
+                    <table id="sales-table">
+                        <thead>
+                            <tr>
+                                <th>ID заказа</th>
+                                <th>Пользователь</th>
+                                <th>Материал</th>
+                                <th>Диаметр</th>
+                                <th>Цвет</th>
+                                <th>Количество (кг)</th>
+                                <th>Дата заказа</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Данные будут заполнены через JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div> <!-- Закрытие admin-panel -->
+            
+            
+            <div id="profile" class="profle_user hidden">
+                <div class="information_div">
+                    <h3>Ваши данные:</h3>
+                    <div class="name info">
+                        <span class="span_name">Имя:</span>
+                        <span class="info_span_name"></span>
+                    </div>
+                    <div class="email info">
+                        <span class="span-email">Почта:</span>
+                        <span class="info_span_email">######</span>
+                    </div>
+                    <div class="password info">
+                        <span class="span-password">Пароль:</span>
+                        <span class="info_span_password">#######</span>
+                    </div>
+                    <div class="olso">
+                        <button class="button_glaz" id="glazik">Показать данные?</button>
+                        <h5>Все права защищены™</h5>
+                    </div>
+                </div>
+            </div>  
+
+
+            <!-- Материалы для обычных пользователей (ВНЕ админ-панели) -->
+            <div id="user-products" class="products-section2 hidden">
+                <h2 class="dd_h2">Наши материалы для 3D-печати</h2>
+                <div class="section-header2">
+                    <div class="search-container">
+                        <input type="text" id="user-search" placeholder="Поиск по названию материала..." 
+                               value="" 
+                               oninput="searchUserProducts(this.value)"
+                               class="search-input">
+                        <div class="search-icon3">🔍</div>
+                    </div>
+                </div>
+                <div id="user-products-grid" class="products-grid">
+                    <!-- Материалы будут добавлены через JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Статистика для обычных пользователей (ВНЕ админ-панели) -->
+            <div id="user-stats" class="stats-section2 hidden">
+                <h2>Ваша статистика</h2>
+                <div class="stats-grid2">
+                    <div class="stat-card">
+                        <h3>Количество заказов</h3>
+                        <div class="stat-value" id="user-purchases-count">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Активные заказы</h3>
+                        <div class="stat-value" id="user-active-rentals">0</div>
+                    </div>
+                </div>
+                
+                <h3 class="f">История ваших заказов</h3>
+                <div id="user-purchase-history" class="purchase-history">
+                    <!-- Заказы будут добавлены через JavaScript -->
+                </div>
+                <h3 class="ttt">Все права защищены™</h3>
+                <h3 class="ttt2">Разработчик- ⨈⨈αααŶ</h3>
+            </div>
+        </div> 
+
+        <!-- Контент для неавторизованных пользователей -->
+        <div id="guest-content">
+            <div class="prosto text-part">
+                <div class="user-info">
+                    <h2>Добро пожаловать в <b>СИСТЕМУ 3D-ПЕЧАТИ</b></h2>
+                    <p class="for_guests">Пожалуйста, войдите или зарегистрируйтесь, чтобы получить доступ к функциям сайта.</p>
+                </div>
+                <div class="Info_for_plusik">
+                    <div class="primer1 text-part">Удобно</div>
+                    <div class="primer2 text-part">Качественно</div>
+                    <div class="primer3 text-part">Безопасно</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<footer>
+    <div class="footer-content">
+        <div class="footer-links">
+            <a href="https://kvantorium.ru/1/tehnopark/">Кванториум</a>
+            <a href="https://kvantoriumtomsk.ru">Кванториум-Томск</a>
+            <a href="https://kvantorium64.ru">Кванториум-Саратов</a>
+        </div>
+        <div class="footer-copyright">
+            <p>Все права защищены™</p>
+        </div>
+    </div>
+</footer>
+
+    <script>
+        // Основные элементы DOM
+        const excel_btn_for_pepople = document.getElementById('excel_people');
+        const exportExcelBtn = document.getElementById('export-excel-btn');
+        const registerFormEl = document.getElementById('register-form');
+        const loginFormEl = document.getElementById('login-form');
+        const userContentEl = document.getElementById('user-content');
+        const guestContentEl = document.getElementById('guest-content');
+        const adminPanelEl = document.getElementById('admin-panel');
+        const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const homeLink = document.getElementById('home-link');
+        const profileLink = document.getElementById('profile-link');
+        const profileInfo = document.getElementById('profile');
+        const productsLink = document.getElementById('products-link');
+        const statsLink = document.getElementById('stats-link');
+        const toLoginLink = document.getElementById('to-login');
+        const toRegisterLink = document.getElementById('to-register');
+        const registerForm = document.getElementById('registerForm');
+        const loginForm = document.getElementById('loginForm');
+        const productForm = document.getElementById('productForm');
+        const usernameDisplay = document.getElementById('username-display');
+        const userRoleMessage = document.getElementById('user-role-message');
+        const registerMessage = document.getElementById('register-message');
+        const loginMessage = document.getElementById('login-message');
+        const productMessage = document.getElementById('product-message');
+        const navig = document.getElementById('nav');
+        const user_info2 = document.querySelector('.user-info2');
+        const name_profile = document.querySelector('.info_span_name');
+        const email_profile = document.querySelector('.info_span_email');
+        const password_profile = document.querySelector('.info_span_password');
+        const glaz = document.getElementById('glazik');
+
+
+        // Элементы для админ-панели
+        const manageUsersBtn = document.getElementById('manage-users-btn');
+        const addProductBtn = document.getElementById('add-product-btn');
+        const viewProductsBtn = document.getElementById('view-products-btn');
+        const viewStatsBtn = document.getElementById('view-stats-btn');
+        const addNewProductBtn = document.getElementById('add-new-product-btn');
+        const refreshStatsBtn = document.getElementById('refresh-stats-btn');
+
+
+        // Элементы для разделов
+        const userHomeEl = document.getElementById('user-home');
+        const usersManagementEl = document.getElementById('users-management');
+        const adminProductsEl = document.getElementById('admin-products');
+        const adminStatsEl = document.getElementById('admin-stats');
+        const userProductsEl = document.getElementById('user-products');
+        const userStatsEl = document.getElementById('user-stats');
+        const addProductSection = document.getElementById('add-product-section');
+        const accordion  = document.getElementById('accordion');
+        const for_admin = document.getElementById('for_adminn');
+        // Элементы для модального окна заказа
+        const orderModal = document.getElementById('order-modal');
+        const orderForm = document.getElementById('orderForm');
+        const closeModalBtn = document.querySelector('.close-modal');
+        const orderQuantityInput = document.getElementById('order-quantity');
+        const orderMessage = document.getElementById('order-message');
+
+        // Переменные для хранения данных о текущем заказе
+        let currentOrderProduct = null;
+
+        // Пользовательские данные
+        let users = JSON.parse(localStorage.getItem('users')) || [];
+        let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+        let products = JSON.parse(localStorage.getItem('products')) || [];
+        let rentals = JSON.parse(localStorage.getItem('rentals')) || [];
+
+        // Переменные для поиска
+        let currentAdminSearchTerm = '';
+        let currentUserSearchTerm = '';
+
+        // Вспомогательная функция для генерации ID
+        function getNextUserId() {
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            if (users.length === 0) return 1;
+            const maxId = Math.max(...users.map(user => user.id));
+            return maxId + 1;
+        }
+
+        function getNextProductId() {
+            const products = JSON.parse(localStorage.getItem('products')) || [];
+            if (products.length === 0) return 1;
+            const maxId = Math.max(...products.map(product => product.id));
+            return maxId + 1;
+        }
+
+        function getNextRentalId() {
+            const rentals = JSON.parse(localStorage.getItem('rentals')) || [];
+            if (rentals.length === 0) return 1;
+            const maxId = Math.max(...rentals.map(rental => rental.id));
+            return maxId + 1;
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Восстанавливаем данные из localStorage
+            users = JSON.parse(localStorage.getItem('users')) || [];
+            currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+            products = JSON.parse(localStorage.getItem('products')) || [];
+            rentals = JSON.parse(localStorage.getItem('rentals')) || [];
+            
+            // Исправляем структуру существующих материалов
+            products.forEach(product => {
+                if (!product.hasOwnProperty('available')) {
+                    product.available = product.stock || 0;
+                }
+                if (!product.hasOwnProperty('image')) {
+                    product.image = null;
+                }
+                // Добавляем недостающие поля для старых записей
+                if (!product.hasOwnProperty('weight')) {
+                    product.weight = 1.0;
+                }
+                if (!product.hasOwnProperty('diameter')) {
+                    product.diameter = product.model || "1.75";
+                }
+                if (!product.hasOwnProperty('color')) {
+                    product.color = "Не указан";
+                }
+            });
+            localStorage.setItem('products', JSON.stringify(products));
+            
+            if (currentUser) {
+                showUserContent();
+            } else {
+                showGuestContent();
+            }
+
+            // Обработчики для модального окна
+            closeModalBtn.addEventListener('click', function() {
+                orderModal.style.display = 'none';
+            });
+
+            window.addEventListener('click', function(event) {
+                if (event.target === orderModal) {
+                    orderModal.style.display = 'none';
+                }
+            });
+
+            orderForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                processOrder();
+            });
+
+            // Обработчик для кнопки обновления статистики
+            if (refreshStatsBtn) {
+                refreshStatsBtn.addEventListener('click', function() {
+                    renderAdminStats();
+                });
+            }
+
+            // Обработчик для предпросмотра изображения
+            document.getElementById('product-image').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const preview = document.getElementById('image-preview');
+                
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.classList.remove('hidden');
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.classList.add('hidden');
+                }
+            });
+        });
+        
+
+        // Показать форму регистрации
+        registerBtn.addEventListener('click', function() {
+            hideAllForms();
+            registerFormEl.classList.remove('hidden');
+            guestContentEl.classList.add('hidden');
+        });
+
+        // Показать форму входа
+        loginBtn.addEventListener('click', function() {
+            hideAllForms();
+            loginFormEl.classList.remove('hidden');
+            guestContentEl.classList.add('hidden');
+        });
+
+        // Переход от регистрации к входу
+        toLoginLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            hideAllForms();
+            loginFormEl.classList.remove('hidden');
+        });
+
+        // Переход от входа к регистрации
+        toRegisterLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            hideAllForms();
+            registerFormEl.classList.remove('hidden');
+        });
+
+        // Обработка регистрации
+        registerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const confirmPassword = document.getElementById('reg-confirm-password').value;
+            
+            // Валидация
+            if (password !== confirmPassword) {
+                showMessage(registerMessage, 'Пароли не совпадают', 'error');
+                return;
+            }
+            
+            if (users.find(user => user.email === email)) {
+                showMessage(registerMessage, 'Пользователь с таким email уже существует', 'error');
+                return;
+            }
+            
+            // Создание пользователя (админом будет первый зарегистрированный)
+            const isAdmin = users.length === 0;
+            const newUser = {
+                id: getNextUserId(),
+                username,
+                email,
+                password,
+                isAdmin
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            showMessage(registerMessage, 'Регистрация прошла успешно! Теперь вы можете войти.', 'success');
+            registerForm.reset();
+            
+            // Автоматический переход к форме входа
+            setTimeout(() => {
+                hideAllForms();
+                loginFormEl.classList.remove('hidden');
+            }, 2000);
+        });
+
+        // Обработка входа
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            const user = users.find(u => u.email === email && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                showUserContent();
+                hideAllForms();
+            } else {
+                showMessage(loginMessage, 'Неверный email или пароль', 'error');
+            }
+        });
+
+        // Выход из системы
+        logoutBtn.addEventListener('click', function() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            showGuestContent();
+            hideAllForms();
+        });
+
+        // Показать форму добавления материала в админ-панели
+        addProductBtn.addEventListener('click', function() {
+            // Очищаем форму перед открытием
+            productForm.reset();
+            document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('image-preview').src = '';
+            
+            hideAdminSections();
+            addProductSection.classList.remove('hidden');
+            addProductSection.classList.add('admin-section-appear');
+        });
+
+        // Добавление нового материала из админ-панели
+        addNewProductBtn.addEventListener('click', function() {
+            // Очищаем форму перед открытием
+            productForm.reset();
+            document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('image-preview').src = '';
+            
+            hideAdminSections();
+            addProductSection.classList.remove('hidden');
+            addProductSection.classList.add('admin-section-appear');
+        });
+
+        // Обработка добавления материала
+        productForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('product-name').value;
+            const weight = parseFloat(document.getElementById('product-weight').value);
+            const diameter = document.getElementById('product-diameter').value;
+            const color = document.getElementById('product-color').value;
+            const category = document.getElementById('product-category').value;
+            const stock = parseFloat(document.getElementById('product-stock').value);
+            const imageInput = document.getElementById('product-image');
+            
+            // Валидация
+            if (stock <= 0) {
+                showMessage(productMessage, 'Количество материала должно быть больше 0', 'error');
+                return;
+            }
+            
+            let imageData = null;
+            if (imageInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imageData = e.target.result;
+                    saveProduct(name, weight, diameter, color, category, stock, imageData);
+                }
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                saveProduct(name, weight, diameter, color, category, stock, imageData);
+            }
+        });
+
+        function saveProduct(name, weight, diameter, color, category, stock, imageData) {
+            const newProduct = {
+                id: getNextProductId(),
+                name,
+                weight,
+                diameter,
+                color,
+                category,
+                stock,
+                available: stock,
+                image: imageData,
+                createdAt: new Date().toISOString()
+            };
+            
+            products.push(newProduct);
+            localStorage.setItem('products', JSON.stringify(products));
+            
+            showMessage(productMessage, 'Материал успешно добавлен!', 'success');
+            
+            // Полная очистка формы
+            productForm.reset();
+            document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('image-preview').src = '';
+            
+            // Обновляем отображение материалов
+            if (currentUser && currentUser.isAdmin) {
+                renderAdminProducts();
+            }
+            
+            // Автоматически переходим к просмотру материалов после добавления
+            setTimeout(() => {
+                hideAdminSections();
+                adminProductsEl.classList.remove('hidden');
+                adminProductsEl.classList.add('admin-section-appear');
+            }, 1500);
+        }
+
+        // Управление пользователями
+        manageUsersBtn.addEventListener('click', function() {
+            hideAdminSections();
+            usersManagementEl.classList.remove('hidden');
+            usersManagementEl.classList.add('admin-section-appear');
+            renderUsersTable();
+        });
+
+        // Просмотр материалов в админ-панели
+        viewProductsBtn.addEventListener('click', function() {
+            hideAdminSections();
+            adminProductsEl.classList.remove('hidden');
+            adminProductsEl.classList.add('admin-section-appear');
+            renderAdminProducts();
+        });
+
+        // Просмотр статистики в админ-панели
+        viewStatsBtn.addEventListener('click', function() {
+            hideAdminSections();
+
+            adminStatsEl.classList.remove('hidden');
+            adminStatsEl.classList.add('admin-section-appear');
+            renderAdminStats();
+        });
+
+        // Показать главную страницу для обычных пользователей
+        homeLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (currentUser) {
+                if (currentUser.isAdmin) {
+                    hideAdminSections();
+                } else {
+                    hideUserSections();
+                    userHomeEl.classList.remove('hidden');
+                    user_info2.classList.remove('hidden')
+                }
+            }
+        });
+        profileLink.addEventListener('click' , function(e){
+            e.preventDefault();
+            if (currentUser && !currentUser.isAdmin){
+                hideUserSections();
+                profileInfo.classList.remove('hidden');
+                name_profile.textContent = currentUser.username;
+                glaz.addEventListener('click' , function(e){
+                    email_profile.textContent = currentUser.email;
+                    password_profile.textContent = currentUser.password;
+                    setTimeout(()=>{
+                        e.preventDefault();
+                        email_profile.textContent = '######';
+                        password_profile.textContent = '#######';
+                    } , 5000)
+                })
+            }
+        });
+        // Показать материалы для обычных пользователей
+        productsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (currentUser && !currentUser.isAdmin) {
+                hideUserSections();
+                userProductsEl.classList.remove('hidden');
+                renderUserProducts();
+            }
+        });
+
+        // Показать статистику для обычных пользователей
+        statsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (currentUser && !currentUser.isAdmin) {
+                hideUserSections();
+                userStatsEl.classList.remove('hidden');
+                renderUserStats();
+            }
+        });
+
+        // Вспомогательные функции
+        function hideAllForms() {
+            registerFormEl.classList.add('hidden');
+            loginFormEl.classList.add('hidden');
+        }
+
+        function hideAdminSections() {
+            usersManagementEl.classList.add('hidden');
+            adminProductsEl.classList.add('hidden');
+            adminStatsEl.classList.add('hidden');
+            addProductSection.classList.add('hidden');
+            
+            // Убираем классы анимации
+            usersManagementEl.classList.remove('admin-section-appear');
+            adminProductsEl.classList.remove('admin-section-appear');
+            adminStatsEl.classList.remove('admin-section-appear');
+            addProductSection.classList.remove('admin-section-appear');
+        }
+
+        function hideUserSections() {
+            userHomeEl.classList.add('hidden');
+            userProductsEl.classList.add('hidden');
+            userStatsEl.classList.add('hidden');
+            profileInfo.classList.add('hidden');
+        }
+
+        function showGuestContent() {
+            userContentEl.classList.add('hidden');
+            guestContentEl.classList.remove('hidden');
+            loginBtn.classList.remove('hidden');
+            registerBtn.classList.remove('hidden');
+            logoutBtn.classList.add('hidden');
+            navig.classList.remove('hidden');
+            profileLink.classList.add('hidden');
+            productsLink.classList.add('hidden');
+            statsLink.classList.add('hidden');
+            document.getElementById('admin-nav-label').classList.add('hidden');
+        }
+
+        function showUserContent() {
+            guestContentEl.classList.add('hidden');
+            userContentEl.classList.remove('hidden');
+            loginBtn.classList.add('hidden');
+            registerBtn.classList.add('hidden');
+            logoutBtn.classList.remove('hidden');
+            profileLink.classList.remove('hidden');
+            productsLink.classList.remove('hidden');
+            statsLink.classList.remove('hidden');
+            
+            usernameDisplay.textContent = currentUser.username;
+            
+            if (currentUser.isAdmin) {
+                adminPanelEl.classList.remove('hidden');
+                navig.classList.add('hidden');
+                document.getElementById('admin-nav-label').classList.remove('hidden');
+                userRoleMessage.textContent = 'Вы вошли, вы имеете доступ к административным функциям';
+                hideUserSections();
+                // По умолчанию показываем приветствие и скрываем все секции
+                userHomeEl.classList.remove('hidden');
+                accordion.classList.add('hidden');
+            } else {
+                adminPanelEl.classList.add('hidden');
+                navig.classList.remove('hidden');
+                document.getElementById('admin-nav-label').classList.add('hidden');
+                userRoleMessage.textContent = 'Вы вошли как обычный пользователь, ниже вся информация сайта';
+                hideAdminSections();
+                // По умолчанию показываем главную страницу для пользователя
+                hideUserSections();
+                userHomeEl.classList.remove('hidden');
+                accordion.classList.remove('hidden');
+            }
+        }
+
+        function showMessage(element, text, type) {
+            element.textContent = text;
+            element.className = `message ${type}`;
+            element.classList.remove('hidden');
+            
+            setTimeout(() => {
+                element.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Возврат на главную
+        homeLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (currentUser) {
+                showUserContent();
+                hideAllForms();
+                if (currentUser.isAdmin) {
+                    hideAdminSections();
+                } else {
+                    hideUserSections();
+                    userHomeEl.classList.remove('hidden');
+                }
+            } else {
+                showGuestContent();
+                hideAllForms();
+            }
+        });
+
+        // Рендеринг таблицы пользователей
+        function renderUsersTable() {
+            const tbody = document.querySelector('#users-table tbody');
+            tbody.innerHTML = '';
+            
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td>${user.isAdmin ? 'Администратор' : 'Пользователь'}</td>
+                    <td>
+                        ${!user.isAdmin ? `<button class="btn btn-admin" onclick="makeAdmin(${user.id})">Админ</button>` : ''}
+                        <button class="btn btn-secondary" onclick="deleteUser(${user.id})">Удалить</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Функция поиска материалов для админа
+        function searchAdminProducts(searchTerm) {
+            currentAdminSearchTerm = searchTerm.toLowerCase();
+            renderAdminProducts();
+        }
+
+        // Функция поиска материалов для пользователя
+        function searchUserProducts(searchTerm) {
+            currentUserSearchTerm = searchTerm.toLowerCase();
+            renderUserProducts();
+        }
+
+        // Рендеринг материалов для админа
+        function renderAdminProducts() {
+            const container = document.getElementById('admin-products-grid');
+            container.innerHTML = '';
+            
+            let filteredProducts = products;
+            
+            // Применяем поиск если есть поисковый запрос
+            if (currentAdminSearchTerm) {
+                filteredProducts = products.filter(product => 
+                    product.name.toLowerCase().includes(currentAdminSearchTerm)
+                );
+            }
+            
+            if (filteredProducts.length === 0) {
+                container.innerHTML = '<div class="no-products">Материалов не найдено</div>';
+                return;
+            }
+            
+            filteredProducts.forEach(product => {
+                if (!product.available && product.available !== 0) {
+                    product.available = product.stock || 0;
+                }
+                
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                
+                let imageContent;
+                if (product.image) {
+                    imageContent = `<img src="${product.image}" class="product-image-preview" alt="${product.name}">`;
+                } else {
+                    imageContent = `<div class="product-image">Изображение материала</div>`;
+                }
+                
+                const isAvailable = product.available > 0;
+                const statusText = isAvailable ? 'В наличии' : 'Нет в наличии';
+                const statusClass = isAvailable ? 'available-status' : 'rented-status';
+                
+                const productRentals = rentals.filter(r => r.productId === product.id);
+                const activeRentals = productRentals.filter(r => !r.returnDate);
+                
+                productCard.innerHTML = `
+                    <div class="product-image-container">
+                        ${imageContent}
+                    </div>
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-details">
+                        <div class="product-detail">
+                            <span class="detail-label">Вес катушки:</span>
+                            <span class="detail-value">${product.weight} кг</span>
+                        </div>
+                        <div class="product-detail">
+                            <span class="detail-label">Диаметр нити:</span>
+                            <span class="detail-value">${product.diameter} мм</span>
+                        </div>
+                        <div class="product-detail">
+                            <span class="detail-label">Цвет:</span>
+                            <span class="detail-value">${product.color}</span>
+                        </div>
+                        <div class="product-detail">
+                            <span class="detail-label">Условия хранения:</span>
+                            <span class="detail-value">${getCategoryName(product.category)}</span>
+                        </div>
+                        <div class="product-detail">
+                            <span class="detail-label">Всего:</span>
+                            <span class="detail-value">${product.stock} кг</span>
+                        </div>
+                        <div class="product-detail">
+                            <span class="detail-label">Доступно:</span>
+                            <span class="detail-value">${product.available} кг</span>
+                        </div>
+                        <div class="product-detail">
+                            <span class="detail-label">Заказано:</span>
+                            <span class="detail-value">${activeRentals.reduce((sum, rental) => sum + rental.quantity, 0)} кг</span>
+                        </div>
+                    </div>
+                    <div class="product-status ${statusClass}">${statusText}</div>
+                    <div class="product-actions">
+                        <div class="btn-group">
+                            <button class="btn btn-success" onclick="addStock(${product.id}, 1)">+1 кг</button>
+                            <button class="btn btn-secondary" onclick="deleteProduct(${product.id})">Удалить</button>
+                            ${activeRentals.length > 0 ? `
+                                <button class="btn return-button" onclick="showRentalsForProduct(${product.id})">
+                                    Заказы (${activeRentals.length})
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(productCard);
+            });
+        }
+
+        // Функция добавления количества материала
+        function addStock(productId, amount) {
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                product.stock += amount;
+                product.available += amount;
+                localStorage.setItem('products', JSON.stringify(products));
+                renderAdminProducts();
+                alert(`Добавлено ${amount} кг материала "${product.name}". Теперь всего: ${product.stock} кг`);
+            }
+        }
+
+        // Рендеринг материалов для пользователей
+        function renderUserProducts() {
+            const container = document.getElementById('user-products-grid');
+            container.innerHTML = '';
+            
+            let filteredProducts = products;
+            
+            // Применяем поиск если есть поисковый запрос
+            if (currentUserSearchTerm) {
+                filteredProducts = products.filter(product => 
+                    product.name.toLowerCase().includes(currentUserSearchTerm)
+                );
+            }
+            
+            if (filteredProducts.length === 0) {
+                container.innerHTML = '<div class="no-products">Материалов не найдено</div>';
+                return;
+            }
+            
+            filteredProducts.forEach(product => {
+                if (!product.available && product.available !== 0) {
+                    product.available = product.stock || 0;
+                }
+                
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                
+                const userRental = rentals.find(r => r.userId === currentUser.id && r.productId === product.id && !r.returnDate);
+                
+                let imageContent;
+                if (product.image) {
+                    imageContent = `<img src="${product.image}" class="product-image-preview" alt="${product.name}">`;
+                } else {
+                    imageContent = `<div class="product-image">Изображение материала</div>`;
+                }
+                
+                const isAvailable = product.available > 0;
+                const statusText = isAvailable ? 'В наличии' : 'Нет в наличии';
+                const statusClass = isAvailable ? 'available-status' : 'rented-status';
+                
+                productCard.innerHTML = `
+                    <div class="product-image-container">
+                        ${imageContent}
+                    </div>
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-details">
+                        <div class="product-detail">
+                            <span class="detail-label">Вес катушки:</span>
+                            <span class="detail-value">${product.weight} кг</span>
+                        </div>
+                        <div class="product-detail">
+                            <span class="detail-label">Диаметр нити:</span>
+                            <span class="detail-value">${product.diameter} мм</span>
+                        </div>
+                        <div class="product-detail">
+                            <span class="detail-label">Цвет:</span>
+                            <span class="detail-value">${product.color}</span>
+                        </div>
+                        <div class="product-detail">
+                            <span class="detail-label">Условия хранения:</span>
+                            <span class="detail-value">${getCategoryName(product.category)}</span>
+                        </div>
+                        <div class="product-detail">
+                            <span class="detail-label">Доступно:</span>
+                            <span class="detail-value">${product.available} кг из ${product.stock} кг</span>
+                        </div>
+                    </div>
+                    <div class="product-status ${statusClass}">${statusText}</div>
+                    <div class="product-actions">
+                        ${userRental ? 
+                            `<div style=' background-color:#e9c67b; padding:8px; color:black; border-radius:5px;' class="rental-status">
+                                Заказано: ${userRental.quantity} кг (ожидает подтверждения)
+                            </div>` :
+                            `<button class="btn rent-button" style="width: 100%;" 
+                                    ${!isAvailable ? 'disabled' : ''} 
+                                    onclick="openOrderModal(${product.id})">
+                                ${!isAvailable ? 'Нет в наличии' : 'Заказать'}
+                            </button>`
+                        }
+                    </div>
+                `;
+                container.appendChild(productCard);
+            });
+        }
+
+        // Открытие модального окна для заказа
+        function openOrderModal(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) {
+                alert('Материал не найден');
+                return;
+            }
+            
+            currentOrderProduct = product;
+            orderQuantityInput.value = '';
+            orderQuantityInput.max = product.available;
+            orderMessage.classList.add('hidden');
+            
+            // Установка заголовка модального окна
+            document.querySelector('#order-modal .modal-header h3').textContent = `Заказ материала: ${product.name}`;
+            
+            orderModal.style.display = 'flex';
+        }
+
+        // Обработка заказа материала
+        function processOrder() {
+            const quantity = parseFloat(orderQuantityInput.value);
+            
+            if (!quantity || quantity <= 0) {
+                showMessage(orderMessage, 'Введите корректное количество материала', 'error');
+                return;
+            }
+            
+            if (quantity > currentOrderProduct.available) {
+                showMessage(orderMessage, `Недостаточно материала. Доступно: ${currentOrderProduct.available} кг`, 'error');
+                return;
+            }
+            
+            // Создание записи о заказе
+            const rental = {
+                id: getNextRentalId(),
+                userId: currentUser.id,
+                productId: currentOrderProduct.id,
+                quantity: quantity,
+                rentDate: new Date().toISOString(),
+                returnDate: null
+            };
+            
+            rentals.push(rental);
+            localStorage.setItem('rentals', JSON.stringify(rentals));
+            
+            // Уменьшение количества доступного материала
+            currentOrderProduct.available -= quantity;
+            localStorage.setItem('products', JSON.stringify(products));
+            
+            orderModal.style.display = 'none';
+            alert(`Вы успешно заказали ${quantity} кг материала "${currentOrderProduct.name}"`);
+            renderUserProducts();
+            renderUserStats();
+        }
+
+        // Рендеринг статистики для админа
+        function renderAdminStats() {
+            // Общее количество пользователей
+            document.getElementById('total-users').textContent = users.length;
+            
+            // Общее количество материалов
+            document.getElementById('total-products').textContent = products.length;
+            
+            // Общее количество заказов
+            const totalRentals = rentals.length;
+            document.getElementById('total-sales').textContent = totalRentals;
+            
+            // Текущие активные заказы
+            const activeRentals = rentals.filter(r => !r.returnDate).length;
+            document.getElementById('active-rentals').textContent = activeRentals;
+            
+            renderRentalsTable();
+        }
+
+        // Функция фильтрации таблицы заказов
+        function filterRentalsTable(searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            const rows = document.querySelectorAll('#sales-table tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchLower) ? '' : 'none';
+            });
+        }
+
+        // Функция рендеринга таблицы заказов
+        function renderRentalsTable() {
+            const tbody = document.querySelector('#sales-table tbody');
+            tbody.innerHTML = '';
+            
+            rentals.forEach(rental => {
+                const user = users.find(u => u.id === rental.userId);
+                const product = products.find(p => p.id === rental.productId);
+                
+                // Пропускаем записи, где нет пользователя или товара
+                if (!user || !product) {
+                    return;
+                }
+                
+                const rentDate = new Date(rental.rentDate).toLocaleDateString();
+                const status = rental.returnDate ? 'Завершен' : 'Активен';
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${rental.id}</td>
+                    <td>${user.username}</td>
+                    <td>${product.name}</td>
+                    <td>${product.diameter} мм</td>
+                    <td>${product.color}</td>
+                    <td>${rental.quantity} кг</td>
+                    <td>${rentDate}</td>
+                    <td>${status}</td>
+                    <td>
+                        ${!rental.returnDate ? 
+                            `<button class="btn return-button" onclick="adminReturnProduct(${rental.id}, ${product.id})">
+                                Подтвердить выполнение
+                            </button>` : 
+                            ''
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Рендеринг статистики для пользователя
+        function renderUserStats() {
+            const userRentals = rentals.filter(r => r.userId === currentUser.id);
+            
+            // Количество заказов
+            document.getElementById('user-purchases-count').textContent = userRentals.length;
+            
+            // Активные заказы
+            const activeRentals = userRentals.filter(r => !r.returnDate).length;
+            document.getElementById('user-active-rentals').textContent = activeRentals;
+            
+            // История заказов
+            const container = document.getElementById('user-purchase-history');
+            container.innerHTML = '';
+            
+            if (userRentals.length === 0) {
+                container.innerHTML = '<p>У вас пока нет заказов.</p>';
+                return;
+            }
+            
+            userRentals.forEach(rental => {
+                const product = products.find(p => p.id === rental.productId);
+                if (!product) {
+                    return;
+                }
+                
+                const purchaseItem = document.createElement('div');
+                purchaseItem.className = 'purchase-item';
+                
+                const rentDate = new Date(rental.rentDate).toLocaleDateString();
+                const returnDate = rental.returnDate ? 
+                    new Date(rental.returnDate).toLocaleDateString() : 
+                    'Еще не завершен';
+                
+                const status = rental.returnDate ? 'Завершен' : 'Активен';
+                
+                purchaseItem.innerHTML = `
+                    <div style='font-weight:bold; margin-bottom:5px;                                         '><strong>${product.name}</strong> - ${status}</div>
+                    <div style='font-weight:bold; margin-bottom:5px;color:#8a8a8a;                           '>Диаметр: ${product.diameter} мм</div>
+                    <div style='font-weight:bold; margin-bottom:5px;color:#8a8a8a;                           '>Цвет: ${product.color}</div>
+                    <div style='font-weight:bold; margin-bottom:5px;color:#8a8a8a;                           '>Количество: ${rental.quantity} кг</div>
+                    <div style='font-weight:bold; margin-bottom:5px;color:#8a8a8a;                           '>Дата заказа: ${rentDate}</div>
+                    <div style='font-weight:bold; margin-bottom:5px;color:#8a8a8a;                           '>Дата завершения: ${returnDate}</div>
+                    ${!rental.returnDate ? 
+                        `<div class="rental-status">
+                            Ожидает подтверждения(Попросите админа)
+                        </div>` : 
+                        ''
+                    }
+                    ${rental.returnDate ? 
+                        `<div class="rental-status_true">
+                            Заказ закрыт
+                        </div>` : 
+                        ''
+                    }
+                `;
+                container.appendChild(purchaseItem);
+            });
+        }
+
+        // Вспомогательные функции для работы с данными
+        function getCategoryName(category) {
+            const categories = {
+                'electronics': 'В герметичном контейнере, с силикагелем, при t15–25°C, влажность ≤ 40%',
+                'clothing': 'В сухом, прохладном месте, избегать прямого света, t 15–25°C, влажность ≤ 50%',
+                'tools': 'В герметичной упаковке, с влагопоглотителем, t 15–25°C, влажность ≤ 45%',
+                'other': 'Другое'
+            };
+            return categories[category] || category;
+        }
+
+        // Функции для работы с пользователями
+        function makeAdmin(userId) {
+            const user = users.find(u => u.id === userId);
+            if (user) {
+                user.isAdmin = true;
+                localStorage.setItem('users', JSON.stringify(users));
+                renderUsersTable();
+                alert('Пользователь теперь администратор');
+            }
+        }
+
+        function deleteUser(userId) {
+            if (userId === currentUser.id) {
+                alert('Вы не можете удалить свой собственный аккаунт');
+                return;
+            }
+            
+            if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+                users = users.filter(u => u.id !== userId);
+                localStorage.setItem('users', JSON.stringify(users));
+                renderUsersTable();
+            }
+        }
+
+        // Функции для работы с материалами
+        function deleteProduct(productId) {
+            if (confirm('Вы уверены, что хотите удалить этот материал?')) {
+                // Проверяем, есть ли активные заказы этого материала
+                const activeRentals = rentals.filter(r => r.productId === productId && !r.returnDate);
+                if (activeRentals.length > 0) {
+                    alert('Нельзя удалить материал, который находится в заказе');
+                    return;
+                }
+                
+                products = products.filter(p => p.id !== productId);
+                localStorage.setItem('products', JSON.stringify(products));
+                renderAdminProducts();
+            }
+        }
+
+        // Функция показа заказов для конкретного материала
+        function showRentalsForProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            const productRentals = rentals.filter(r => r.productId === productId && !r.returnDate);
+            
+            if (productRentals.length === 0) {
+                alert('Нет активных заказов для этого материала');
+                return;
+            }
+            
+            // Создаем модальное окно для управления заказами
+            const modalHtml = `
+                <div id="rental-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;">
+                        <h3>Управление заказами: ${product.name}</h3>
+                        <div id="rental-list">
+                            ${productRentals.map(rental => {
+                                const user = users.find(u => u.id === rental.userId);
+                                // Проверяем, найден ли пользователь
+                                if (!user) {
+                                    return `
+                                        <div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 4px; background-color: #f8d7da;">
+                                            <p><strong>Пользователь:</strong> Не найден (ID: ${rental.userId})</p>
+                                            <p><strong>Ошибка:</strong> Пользователь удален</p>
+                                            <button class="btn btn-secondary" onclick="cleanupRental(${rental.id})" style="width: 100%;">
+                                                Удалить запись заказа
+                                            </button>
+                                        </div>
+                                    `;
+                                }
+                                
+                                const rentDate = new Date(rental.rentDate).toLocaleDateString();
+                                
+                                return `
+                                    <div style="border: 2px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 8px;">
+                                        <p style= 'margin-bottom: 10px;' ><strong>Пользователь:</strong> ${user.username}</p>
+                                        <p style= 'margin-bottom: 10px;'><strong>Email:</strong> ${user.email}</p>
+                                        <p style= 'margin-bottom: 10px;' ><strong>Дата заказа:</strong> ${rentDate}</p>
+                                        <p style= 'margin-bottom: 10px;' ><strong>Количество:</strong> ${rental.quantity} кг</p>
+                                        <button class="btn return-button" onclick="adminReturnProduct(${rental.id}, ${product.id})" style="width: 100%;">
+                                            Подтвердить выполнение заказа
+                                        </button>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <button class="btn btn-secondary" onclick="closeRentalModal()" style="width: 100%; margin-top: 10px;">
+                            Закрыть
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        // Функция закрытия модального окна заказов
+        function closeRentalModal() {
+            const modal = document.getElementById('rental-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Функция для очистки записей заказа с удаленными пользователями
+        function cleanupRental(rentalId) {
+            if (confirm('Вы уверены, что хотите удалить эту запись заказа?')) {
+                rentals = rentals.filter(r => r.id !== rentalId);
+                localStorage.setItem('rentals', JSON.stringify(rentals));
+                closeRentalModal();
+                renderAdminProducts();
+                alert('Запись заказа удалена');
+            }
+        }
+
+        // Функция подтверждения выполнения заказа администратором
+        function adminReturnProduct(rentalId, productId) {
+            const rental = rentals.find(r => r.id === rentalId);
+            const product = products.find(p => p.id === productId);
+            
+            if (!rental || !product) {
+                alert('Ошибка: заказ или материал не найдены');
+                return;
+            }
+            
+            // Устанавливаем дату возврата (выполнения заказа)
+            rental.returnDate = new Date().toISOString();
+            localStorage.setItem('rentals', JSON.stringify(rentals));
+
+            
+            const user = users.find(u => u.id === rental.userId);
+            
+            alert(`Заказ выполнен! Пользователь ${user.username} получил ${rental.quantity} кг материала "${product.name}".`);
+            
+            // Закрываем модальное окно и обновляем отображение
+            closeRentalModal();
+            renderAdminProducts();
+            renderAdminStats();
+        }
+
+        // Делаем функции глобальными для использования в HTML
+        window.searchAdminProducts = searchAdminProducts;
+        window.searchUserProducts = searchUserProducts;
+        window.makeAdmin = makeAdmin;
+        window.deleteUser = deleteUser;
+        window.deleteProduct = deleteProduct;
+        window.openOrderModal = openOrderModal;
+        window.showRentalsForProduct = showRentalsForProduct;
+        window.closeRentalModal = closeRentalModal;
+        window.cleanupRental = cleanupRental;
+        window.adminReturnProduct = adminReturnProduct;
+        window.filterRentalsTable = filterRentalsTable;
+        window.addStock = addStock;
+
+        // Навигация с анимацией
+        const allLinks = document.querySelectorAll('.nav-links a');
+        allLinks.forEach((link) => {
+            link.addEventListener('click', (event) => {
+                if (!document.startViewTransition) {
+                    setActiveItem(event.target);
+                    return;
+                }
+                document.startViewTransition(() => setActiveItem(event.target));
+            });
+        });
+
+        function setActiveItem(element) {
+            allLinks.forEach((link) => link.classList.remove("active"));
+            element.classList.add("active");
+        }
+
+        const logo_link = document.querySelector('.logo_link')
+        logo_link.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (currentUser) {
+                showUserContent();
+                hideAllForms();
+                if (currentUser.isAdmin) {
+                    hideAdminSections();
+                } else {
+                    hideUserSections();
+                    userHomeEl.classList.remove('hidden');
+                }
+            } else {
+                showGuestContent();
+                hideAllForms();
+            }
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            const textParts = document.querySelectorAll('.text-part');
+            
+            function showTextWithDelay() {
+                textParts.forEach((part, index) => {
+                    setTimeout(() => {
+                        part.classList.add('visible');
+                    }, index * 200);
+                });
+            }
+            
+            setTimeout(showTextWithDelay, 100);
+        });
+        function exportToExcel() {
+            try {
+                // Создаем массив данных для экспорта
+                const excelData = [];
+                
+                // Добавляем заголовки
+                const headers = [
+                    'ID заказа',
+                    'Пользователь',
+                    'Материал',
+                    'Диаметр (мм)',
+                    'Цвет',
+                    'Количество (кг)',
+                    'Дата заказа',
+                    'Статус'
+                ];
+                excelData.push(headers);
+                
+                // Добавляем данные о заказах
+                rentals.forEach(rental => {
+                    const user = users.find(u => u.id === rental.userId);
+                    const product = products.find(p => p.id === rental.productId);
+                    
+                    if (user && product) {
+                        const row = [
+                            rental.id,
+                            user.username,
+                            product.name,
+                            product.diameter,
+                            product.color,
+                            rental.quantity,
+                            new Date(rental.rentDate).toLocaleDateString('ru-RU'),
+                            rental.returnDate ? 'Завершен' : 'Активен'
+                        ];
+                        excelData.push(row);
+                    }
+                });
+                
+                // Создаем рабочую книгу
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(excelData);
+                
+                // Добавляем рабочий лист в книгу
+                XLSX.utils.book_append_sheet(wb, ws, 'Заказы');
+                
+                // Генерируем имя файла с датой
+                const date = new Date();
+                const fileName = `заказы_${date.getDate().toString().padStart(2, '0')}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getFullYear()}.xlsx`;
+                
+                // Сохраняем файл
+                XLSX.writeFile(wb, fileName);
+                
+                // Показываем сообщение об успехе
+                alert(`Excel файл "${fileName}" скачан!`);
+                
+            } catch (error) {
+                console.error('Ошибка при экспорте в Excel:', error);
+                alert('Ошибка при создании Excel файла.');
+            }
+        }
+
+        function exportToExcelPeople(){
+            try{
+                const DataPeople = [];
+                const header = [
+                    'ID ',
+                    'Имя',
+                    'Роль',
+                    'Email'
+                ]
+                DataPeople.push(header);
+                users.forEach(user =>{
+                    const user_people = users.find(user_people => user_people.email && user_people.password);
+                    if(user_people){
+                        const row = [
+                            user.id,
+                            user.username,
+                            user.isAdmin,
+                            user.email
+                        ]
+                        DataPeople.push(row);
+                    }
+                })
+
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(DataPeople);
+                XLSX.utils.book_append_sheet(wb, ws, 'Пользователи');
+                const date = new Date();
+                const fileName = `Пользователи${date.getDate().toString().padStart(2, '0')}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getFullYear()}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                alert("Успех");
+                }
+
+            catch (error){
+                console.error('Ошибка таблицы ,' , error)
+                alert('Ошибка при создании Excel файла.');
+            }
+        }
+
+
+
+        // Обработчик для кнопки экспорта
+        exportExcelBtn.addEventListener('click', exportToExcel);
+        excel_btn_for_pepople.addEventListener('click' , exportToExcelPeople)
+
+        const header = document.querySelectorAll(".accordionHeader")
+        header.forEach(header =>{
+            header.addEventListener('click' , () =>{
+            const currentBody = document.querySelector(".accordionHeader.active")
+
+            // if(currentBody && currentBody !== header){
+            //     currentBody.classList.remove('active')
+            //     currentBody.nextElementSibling.classList.remove('open')
+            // }
+            header.classList.toggle('active')
+            header.nextElementSibling.classList.toggle('open')
+
+        })
+    })
+
+
+</script>
+</body>
+</html>
